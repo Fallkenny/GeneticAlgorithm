@@ -7,7 +7,7 @@ namespace GeneticAlgorithm
 {
     class Population
     {
-        public List<Individual> Individuals { get; set; }
+        public List<Individual> Individuals { get; set; } = new List<Individual>();
         public int Size { get; set; }
         public Population(int size)
         {

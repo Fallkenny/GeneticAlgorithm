@@ -4,7 +4,7 @@ using System.Text;
 
 namespace GeneticAlgorithm
 {
-    class MapSpace
+    public class MapSpace
     {
         public MapSpace(int reward, int id, int x, int y)
         {

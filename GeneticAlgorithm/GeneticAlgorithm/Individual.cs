@@ -18,6 +18,6 @@ namespace GeneticAlgorithm
 
         public int Fitness { get; set; } = 0;
 
-        public string Genes { get; set; }
+        public string Genes { get; set; }        
     }
 }

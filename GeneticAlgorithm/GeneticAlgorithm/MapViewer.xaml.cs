@@ -38,8 +38,8 @@ namespace GeneticAlgorithm
                 {
                     nextX = j * RECTWIDTH;
                     nextY = i * RECTHEIGHT;
-                    var currentNode = map[j, i];
-                    var spaceRect = this.GetSpaceRect(currentNode, currentPosition == currentNode.Id);
+                    var currentSpace = map[j, i];
+                    var spaceRect = this.GetSpaceRect(currentSpace, currentPosition == currentSpace.Id);
 
                     MapCanvas.Children.Add(spaceRect);
                     Canvas.SetTop(spaceRect, nextY);
@@ -74,14 +74,31 @@ namespace GeneticAlgorithm
             {
                 BorderThickness = new Thickness
                 {
-
+                    Bottom = mapSpace.WallBottom ? 1 : 0,
+                    Top = mapSpace.WallUp ? 1 : 0,
+                    Left = mapSpace.WallLeft ? 1 : 0,
+                    Right = mapSpace.WallRight ? 1 : 0,
                 },
+                
+                BorderBrush = Brushes.Black,
             };
+
+            var width = RECTWIDTH;
+            var height = RECTHEIGHT;
+
+            if (mapSpace.WallBottom)
+                height--;
+            if(mapSpace.WallUp)
+                height--;
+            if (mapSpace.WallLeft)
+                width--;
+            if (mapSpace.WallRight)
+                width--;
             
             var rectangle = new Rectangle()
             {
-                Width = RECTWIDTH,
-                Height = RECTHEIGHT,
+                Width = width,
+                Height = height,
                 Fill = color,
                 StrokeThickness = 1,
                 

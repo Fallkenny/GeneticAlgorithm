@@ -15,7 +15,7 @@
             this.YTo = yTo;
         }
 
-        public bool VerticalWall() => XFrom == XTo;
-        public bool HorizontalWall() => YFrom == YTo;
+        public bool VerticalWall() => YFrom == YTo;
+        public bool HorizontalWall() => XFrom == XTo;
     }
 }
