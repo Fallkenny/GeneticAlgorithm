@@ -11,4 +11,24 @@ namespace GeneticAlgorithm
         Up,
         Down
     }
+
+    public static class MovementExtension
+    {
+        public static string Arrow(this eMovement eMovement)
+        {
+            //↑↓→←
+            switch (eMovement)
+            {
+                case eMovement.Down:
+                    return "↓";
+                case eMovement.Up:
+                    return "↑";
+                case eMovement.Left:
+                    return "←";
+                case eMovement.Right:
+                default:
+                    return "→";
+            }
+        }
+    }
 }

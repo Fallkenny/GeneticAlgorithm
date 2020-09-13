@@ -46,6 +46,8 @@ namespace GeneticAlgorithm
                     Canvas.SetLeft(spaceRect, nextX);
                 }
             }
+            this.Width = (RECTWIDTH * width) +10;
+            this.Height = (RECTHEIGHT* height)+10;
         }
 
         private Border GetSpaceRect(MapSpace mapSpace, bool currentPosition)

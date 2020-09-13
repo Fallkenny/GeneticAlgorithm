@@ -5,9 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GeneticAlgorithm"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="527" Width="577">
     <Grid>
-        <local:MapViewer x:Name="MapViewer" HorizontalAlignment="Left" Height="312" Margin="10,10,0,0" VerticalAlignment="Top" Width="467"/>
-
+        <local:MapViewer x:Name="MapViewer" HorizontalAlignment="Left" Height="250" Margin="10,10,0,0" VerticalAlignment="Top" Width="330" BorderThickness="5,5,5,5" BorderBrush="Black"/>
+        <Label x:Name="lblGeneration" Content="Geração: " HorizontalAlignment="Left" Margin="345,10,0,0" VerticalAlignment="Top"/>
+        <Label Content="Crossover: " HorizontalAlignment="Left" Margin="345,41,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="txtCrossoverRate" HorizontalAlignment="Left" Margin="413,45,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="82" PreviewTextInput="txtCrossoverRate_PreviewTextInput"/>
+        <Button Content="▶" HorizontalAlignment="Left" Margin="170,360,0,0" VerticalAlignment="Top" Height="78" Width="62" FontSize="50" Click="play_Click"/>
+        <Button Content="I I" HorizontalAlignment="Left" Margin="102,360,0,0" VerticalAlignment="Top" Height="78" Width="62" FontSize="50" Click="pause_Click" FontWeight="Bold"/>
+        <Button Content="↻" HorizontalAlignment="Left" Margin="35,360,0,0" VerticalAlignment="Top" Height="78" Width="62" FontSize="50" Click="restart_Click" FontWeight="Bold"/>
+        <CheckBox x:Name="chkElitism" Content="Elitismo" HorizontalAlignment="Left" Margin="350,132,0,0" VerticalAlignment="Top"/>
+        <Label Content="Número de Individuos:" HorizontalAlignment="Left" Margin="267,386,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="txtIndividuals" HorizontalAlignment="Left" Margin="402,390,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="82" PreviewTextInput="txtIndividuals_PreviewTextInput"/>
+        <Label x:Name="lblBestIndividual" Content="Melhor individuo:" HorizontalAlignment="Left" Margin="35,265,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="lblCurrentIndividual" Content="Individuo Atual:" HorizontalAlignment="Left" Margin="345,165,0,0" VerticalAlignment="Top"/>
+        <Label Content="Mutação: " HorizontalAlignment="Left" Margin="345,67,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="txtMutationRate" HorizontalAlignment="Left" Margin="413,71,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="82" PreviewTextInput="txtMutationRate_PreviewTextInput"/>
     </Grid>
 </Window>

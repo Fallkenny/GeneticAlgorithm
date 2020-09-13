@@ -36,6 +36,7 @@ namespace GeneticAlgorithm
                        
             Map[7, 0].Reward = Rewards.GOAL;
             this.StartPosition = Map[0, 7];
+            this.EndPosition = Map[7, 0];
 
             for (int j = 0; j < MapHeight; j++)
                 for (int i = 0; i < MapWidth; i++)

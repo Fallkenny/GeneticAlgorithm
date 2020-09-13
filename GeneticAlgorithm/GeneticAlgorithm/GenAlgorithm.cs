@@ -9,13 +9,18 @@ namespace GeneticAlgorithm
     {
         private Random _random = new Random();
 
+        public static readonly double DEFAULT_CROSSOVER_RATE = 0.7d;
+        public static readonly double DEFAULT_MUTATION_RATE = 0.3d;
+
         public float CrossoverRate { get; set; }
+        public float MutationRate { get; set; }
 
         public eAlgorithmState AlgorithmState { get; set; }
 
         public MazeProblem Maze { get; set; }
 
-        //public MapSpace[,] Map;
+        public Individual CurrentBestIndividual { get; set; }
+
         public MapSpace StartState { get; private set; }
         public MapSpace CurrentState { get; set; }
 
@@ -25,6 +30,16 @@ namespace GeneticAlgorithm
         private int _currentEvaluationIndex;
         private int _individualSize = 28;
         private int _populationSize = 100;
+        private eMovement? _previousMovement;
+
+        public int GenerationCount { get; set; }
+        public bool Elitism { get; set; }
+        public Individual CurrentIndividual { get; private set; }
+
+        public GenAlgorithm(int populationSize)
+        {
+            this._populationSize = populationSize;
+        }
 
         public void RunIteration()
         {
@@ -34,12 +49,17 @@ namespace GeneticAlgorithm
                 this.CurrentPopulation = new Population(_populationSize);
                 CreateRandomPopulation();
                 this.AlgorithmState = eAlgorithmState.Generating;
+                GenerationCount = 0;
                 return;
             }
 
             if (this.AlgorithmState == eAlgorithmState.Generating)
             {
-                this.CurrentPopulation = NewGeneration(this.CurrentPopulation, true);
+                this.CurrentPopulation.Order();
+                this.CurrentBestIndividual = CurrentPopulation.Individuals.First();
+                this.CurrentPopulation = NewGeneration(this.CurrentPopulation, this.Elitism);
+                this.CurrentPopulation.Order();
+                GenerationCount++;
                 _currentIndividualIndex = 0;
                 this.CurrentState = StartState;
                 this.AlgorithmState = eAlgorithmState.CalculatingFitness;
@@ -48,21 +68,44 @@ namespace GeneticAlgorithm
 
             if (this.AlgorithmState == eAlgorithmState.CalculatingFitness)
             {
+                if (_currentEvaluationIndex == _individualSize)
+                {
+                    CurrentState = StartState;
+                    _currentEvaluationIndex = 0;
+                    _currentIndividualIndex++;
+                    _previousMovement = null;
+                    if (_currentIndividualIndex == CurrentPopulation.Size)
+                    {
+                        _currentIndividualIndex = 0;                        
+                        this.AlgorithmState = eAlgorithmState.Generating;
+                    }
+                    return;
+                }
+
                 var individual = this.CurrentPopulation.Individuals.ElementAt(_currentIndividualIndex);
+                CurrentIndividual = individual;
                 var movementGene = individual.Genes.Substring(_currentEvaluationIndex, 2);
                 _currentEvaluationIndex += 2;
                 var movement = GetMovement(movementGene);
-                CalculateFitness(individual, movement);
+                var isLastMovement = _currentEvaluationIndex == _individualSize;
+                MoveAndCalculateFitness(individual, movement, isLastMovement);
+                
+                if (_currentIndividualIndex == CurrentPopulation.Size)
+                {
+                    _previousMovement = null;
+                    _currentIndividualIndex = 0;
+                    this.AlgorithmState = eAlgorithmState.Generating;
+                }
+
+
+
                 return;
             }
+
             if (this.AlgorithmState == eAlgorithmState.ReachedGoal)
             {
                 return;
-
-
             }
-
-
         }
 
         private void CreateRandomPopulation()
@@ -81,28 +124,47 @@ namespace GeneticAlgorithm
             return new Individual(genesString);
         }
 
-        private void CalculateFitness(Individual individual, eMovement movement)
+        public double CalculateEuclidianDistance(int x1, int y1, int x2, int y2)
+            => Math.Sqrt(((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)));
+
+        private void MoveAndCalculateFitness(Individual individual, eMovement movement, bool isLastMovement)
         {
             individual.Fitness += this.PunishMovement(movement, out bool validMovement, out int nextX, out int nextY);
             if (validMovement)
             {
+                
+                if (Maze.Map[nextX, nextY].Reward == Rewards.GOAL)
+                {
+
+                }
+
                 CurrentState = Maze.Map[nextX, nextY];
                 individual.Fitness += CurrentState.Reward;
+                _previousMovement = movement;
 
-                if (CurrentState.Reward == Rewards.GOAL)
-                    AlgorithmState = eAlgorithmState.ReachedGoal;
+                if(isLastMovement)
+                {
+                    var distanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, nextX, nextY);
+                    individual.Fitness -= 5 * (int)distanceFromGoal;
+                    var distanceFromStart = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
+                    individual.Fitness += 3 * (int)distanceFromStart;
+                    if(individual.Fitness > 25)
+                    {
+
+                    }
+                }
+
+                //if (CurrentState.Reward == Rewards.GOAL)
+                //    AlgorithmState = eAlgorithmState.ReachedGoal;
             }
             else
             {
                 CurrentState = StartState;
-                _currentEvaluationIndex = _currentIndividualIndex = 0;
-            }
-
-            if (_currentEvaluationIndex == individual.Genes.Length - 1)
-            {
+                _previousMovement = null;
                 _currentEvaluationIndex = 0;
                 _currentIndividualIndex++;
             }
+
         }
 
         public int PunishMovement(eMovement movement, out bool validMovement, out int nextX, out int nextY)
@@ -117,19 +179,25 @@ namespace GeneticAlgorithm
                 case eMovement.Down:
                     nextY++;
                     if (CurrentState.WallBottom)
-                        punish = Rewards.OBSTACLE;
+                        punish += Rewards.OBSTACLE;
+                    if (_previousMovement == eMovement.Up)
+                        punish += Rewards.GOINGBACK;
                     break;
 
                 case eMovement.Left:
                     nextX--;
                     if (CurrentState.WallLeft)
                         punish = Rewards.OBSTACLE;
+                    if (_previousMovement == eMovement.Right)
+                        punish += Rewards.GOINGBACK;
                     break;
 
                 case eMovement.Right:
                     nextX++;
                     if (CurrentState.WallRight)
                         punish = Rewards.OBSTACLE;
+                    if (_previousMovement == eMovement.Left)
+                        punish += Rewards.GOINGBACK;
                     break;
 
                 case eMovement.Up:
@@ -137,6 +205,8 @@ namespace GeneticAlgorithm
                     nextY--;
                     if (CurrentState.WallUp)
                         punish = Rewards.OBSTACLE;
+                    if (_previousMovement == eMovement.Down)
+                        punish += Rewards.GOINGBACK;
                     break;
             }
 
@@ -160,7 +230,6 @@ namespace GeneticAlgorithm
                 default:
                     return eMovement.Down;
             }
-
         }
 
         private IEnumerable<MapWall> GetWalls()
@@ -201,7 +270,6 @@ namespace GeneticAlgorithm
 
         }
 
-
         public void Initialize()
         {
             this.Maze = new MazeProblem(8, 8, GetWalls(), 0, 7, 7, 0);
@@ -210,13 +278,12 @@ namespace GeneticAlgorithm
             this.CurrentState = Maze.StartPosition;
         }
 
-
         public Population NewGeneration(Population population, bool elitism)
         {
             var newPopulation = new Population(population.Size);
 
             if (elitism)
-                newPopulation.Individuals.Add(population.Individuals.First());
+                newPopulation.Add(new Individual(population.Individuals.First().Genes));
 
             while (newPopulation.Individuals.Count() < newPopulation.Size)
             {
@@ -226,12 +293,11 @@ namespace GeneticAlgorithm
                     newPopulation.Individuals.AddRange(Crossover(parents));
                 else
                 {
-                    newPopulation.Individuals.Add(new Individual(parents.Item1.Genes));
-                    newPopulation.Individuals.Add(new Individual(parents.Item2.Genes));
+                    newPopulation.Individuals.Add(new Individual(parents.Item1.Genes, MutationRate));
+                    newPopulation.Individuals.Add(new Individual(parents.Item2.Genes, MutationRate));
                 }
             }
 
-            newPopulation.Order();
             return newPopulation;
         }
 
@@ -239,26 +305,26 @@ namespace GeneticAlgorithm
         {
             Random r = new Random();
 
-            var cutPoint1 = r.Next((parents.Item1.Genes.Length / 2) - 2) + 1;
-            var cutPoint2 = r.Next((parents.Item1.Genes.Length / 2) - 2) + parents.Item1.Genes.Length / 2;
+            var cutPoint1 = r.Next((parents.Item1.Genes.Length / 2) - 1) + 1;
+            var cutPoint2 = r.Next((parents.Item1.Genes.Length / 2)) + parents.Item1.Genes.Length / 2;
 
             var parentGenes1 = parents.Item1.Genes;
             var parentGenes2 = parents.Item2.Genes;
 
-            var geneFilho1 = $"{parentGenes1.Substring(0, cutPoint1) }" +
-                             $"{parentGenes2.Substring(cutPoint1, cutPoint2)}" +
-                             $"{parentGenes1.Substring(cutPoint2, parentGenes1.Length)}";
+            var child1Genes = $"{parentGenes1.Substring(0, cutPoint1) }" +
+                             $"{parentGenes2.Substring(cutPoint1, cutPoint2 - cutPoint1)}" +
+                             $"{parentGenes1.Substring(cutPoint2, parentGenes1.Length - cutPoint2)}";
 
 
-            var geneFilho2 = $"{parentGenes2.Substring(0, cutPoint1)}" +
-                             $"{parentGenes1.Substring(cutPoint1, cutPoint2)}" +
-                             $"{parentGenes2.Substring(cutPoint2, parentGenes2.Length)}";
+            var child2Genes = $"{parentGenes2.Substring(0, cutPoint1)}" +
+                             $"{parentGenes1.Substring(cutPoint1, cutPoint2 - cutPoint1)}" +
+                             $"{parentGenes2.Substring(cutPoint2, parentGenes2.Length - cutPoint2)}";
 
 
             return new Individual[]
             {
-                new Individual(geneFilho1),
-                new Individual(geneFilho2)
+                new Individual(child1Genes, MutationRate),
+                new Individual(child2Genes, MutationRate)
             };
         }
 
