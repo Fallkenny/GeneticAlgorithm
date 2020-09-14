@@ -142,7 +142,7 @@ namespace GeneticAlgorithm
                     var currentDistanceFromGoal = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
 
                     if (previousDistanceFromGoal < currentDistanceFromGoal)
-                        individual.Fitness -= 3;
+                        individual.Fitness -= 1;
                     //else
                     //individual.Fitness -= 1;
 
@@ -169,8 +169,8 @@ namespace GeneticAlgorithm
 
 
                     var repeatedSpaces = StepById.Values.Where(step => step.Count > 1);
-                    foreach (var repeatedSpace in repeatedSpaces)
-                        individual.Fitness -= 4 * repeatedSpace.Count;
+                    foreach (var repeatedSpace in repeatedSpaces)                    
+                        individual.Fitness -= (repeatedSpace.Last() - repeatedSpace.First())/2;                    
 
                     var distanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, nextX, nextY);
                     individual.Fitness -= 5 * (int)distanceFromGoal;

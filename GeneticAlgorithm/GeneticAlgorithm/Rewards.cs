@@ -10,6 +10,6 @@ namespace GeneticAlgorithm
         public const int NORMALSPACE = 0;
         public const int OBSTACLE = -50;
         public const int GOINGBACK = -50;
-        public const int GOAL = 10;
+        public const int GOAL = 15;
     }
 }
