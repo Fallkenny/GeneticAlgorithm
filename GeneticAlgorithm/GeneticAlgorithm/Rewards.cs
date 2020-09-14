@@ -8,8 +8,8 @@ namespace GeneticAlgorithm
     {
         public const int VOID = -1000;
         public const int NORMALSPACE = 0;
-        public const int OBSTACLE = -45;
-        public const int GOINGBACK = -45;
+        public const int OBSTACLE = -50;
+        public const int GOINGBACK = -50;
         public const int GOAL = 10;
     }
 }

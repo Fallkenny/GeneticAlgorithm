@@ -31,6 +31,7 @@ namespace GeneticAlgorithm
         private int _individualSize = 28;
         private int _populationSize = 100;
         private eMovement? _previousMovement;
+        private Dictionary<int, List<int>> StepById { get; set; } = new Dictionary<int, List<int>>();
 
         public int GenerationCount { get; set; }
         public bool Elitism { get; set; }
@@ -74,9 +75,10 @@ namespace GeneticAlgorithm
                     _currentEvaluationIndex = 0;
                     _currentIndividualIndex++;
                     _previousMovement = null;
+                    StepById = new Dictionary<int, List<int>>();
                     if (_currentIndividualIndex == CurrentPopulation.Size)
                     {
-                        _currentIndividualIndex = 0;                        
+                        _currentIndividualIndex = 0;
                         this.AlgorithmState = eAlgorithmState.Generating;
                     }
                     return;
@@ -89,10 +91,11 @@ namespace GeneticAlgorithm
                 var movement = GetMovement(movementGene);
                 var isLastMovement = _currentEvaluationIndex == _individualSize;
                 MoveAndCalculateFitness(individual, movement, isLastMovement);
-                
+
                 if (_currentIndividualIndex == CurrentPopulation.Size)
                 {
                     _previousMovement = null;
+                    StepById = new Dictionary<int, List<int>>();
                     _currentIndividualIndex = 0;
                     this.AlgorithmState = eAlgorithmState.Generating;
                 }
@@ -121,7 +124,7 @@ namespace GeneticAlgorithm
             while (individualSize-- > 0)
                 genesString += bits.OrderBy(guid => Guid.NewGuid()).First();
 
-            return new Individual(genesString);
+            return new Individual(genesString) { Fitness = int.MinValue };
         }
 
         public double CalculateEuclidianDistance(int x1, int y1, int x2, int y2)
@@ -132,35 +135,56 @@ namespace GeneticAlgorithm
             individual.Fitness += this.PunishMovement(movement, out bool validMovement, out int nextX, out int nextY);
             if (validMovement)
             {
-                
-                if (Maze.Map[nextX, nextY].Reward == Rewards.GOAL)
+
+                if (!isLastMovement)
                 {
+                    var previousDistanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, CurrentState.X, CurrentState.Y); ;
+                    var currentDistanceFromGoal = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
+
+                    if (previousDistanceFromGoal < currentDistanceFromGoal)
+                        individual.Fitness -= 3;
+                    //else
+                    //individual.Fitness -= 1;
 
                 }
+
 
                 CurrentState = Maze.Map[nextX, nextY];
                 individual.Fitness += CurrentState.Reward;
                 _previousMovement = movement;
 
-                if(isLastMovement)
+
+                if (!StepById.ContainsKey(CurrentState.Id))
+                    StepById.Add(CurrentState.Id, new List<int>() { _currentEvaluationIndex / 2 });
+                else
+                    StepById[CurrentState.Id].Add(_currentEvaluationIndex / 2);
+
+                if (isLastMovement)
                 {
+
+                    //
+                    //punir também pela diferença de passos 
+                    //se pisou na mesma casa no passo 2 e no passo 7, então punir com 7-2;
+                    //
+
+
+                    var repeatedSpaces = StepById.Values.Where(step => step.Count > 1);
+                    foreach (var repeatedSpace in repeatedSpaces)
+                        individual.Fitness -= 4 * repeatedSpace.Count;
+
                     var distanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, nextX, nextY);
                     individual.Fitness -= 5 * (int)distanceFromGoal;
                     var distanceFromStart = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
                     individual.Fitness += 3 * (int)distanceFromStart;
-                    if(individual.Fitness > 25)
-                    {
-
-                    }
                 }
 
-                //if (CurrentState.Reward == Rewards.GOAL)
-                //    AlgorithmState = eAlgorithmState.ReachedGoal;
+
             }
             else
             {
                 CurrentState = StartState;
                 _previousMovement = null;
+                StepById = new Dictionary<int, List<int>>();
                 _currentEvaluationIndex = 0;
                 _currentIndividualIndex++;
             }
