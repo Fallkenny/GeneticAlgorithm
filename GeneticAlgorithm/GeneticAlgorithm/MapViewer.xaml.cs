@@ -25,9 +25,10 @@ namespace GeneticAlgorithm
 
         static int RECTWIDTH = 40;
         static int RECTHEIGHT = 30;
-
-        public void DrawMap(MapSpace[,] map, int width, int height, int currentPosition)
+        private List<int> _bestPathSteps;
+        public void DrawMap(MapSpace[,] map, int width, int height, int currentPosition, List<int> steps)
         {
+            _bestPathSteps = steps ?? new List<int>();
             MapCanvas.Children.Clear();
             int nextX = 0;
             int nextY = 0;
@@ -46,8 +47,8 @@ namespace GeneticAlgorithm
                     Canvas.SetLeft(spaceRect, nextX);
                 }
             }
-            this.Width = (RECTWIDTH * width) +10;
-            this.Height = (RECTHEIGHT* height)+10;
+            this.Width = (RECTWIDTH * width) + 10;
+            this.Height = (RECTHEIGHT * height) + 10;
         }
 
         private Border GetSpaceRect(MapSpace mapSpace, bool currentPosition)
@@ -56,20 +57,27 @@ namespace GeneticAlgorithm
             if (currentPosition)
                 color = Brushes.Blue;
             else
-                switch (mapSpace.Reward)
+            {
+                if (_bestPathSteps.Contains(mapSpace.Id))
                 {
-                    case Rewards.GOAL:
-                        color = Brushes.Green;
-                        break;
-                    case Rewards.NORMALSPACE:
-                        color = Brushes.LightGray;
-                        break;
-                    case Rewards.OBSTACLE:
-                        color = Brushes.Black;
-                        break;
-                    default:
-                        break;
+                    if (mapSpace.Reward == Rewards.GOAL)
+                        color = Brushes.LightGreen;
+                    else
+                        color = Brushes.AliceBlue;
                 }
+                else
+                    switch (mapSpace.Reward)
+                    {
+                        case Rewards.GOAL:
+                            color = Brushes.Green;
+                            break;
+                        case Rewards.NORMALSPACE:
+                            color = Brushes.LightGray;
+                            break;
+                        default:
+                            break;
+                    }
+            }
 
 
             var border = new Border()
@@ -81,7 +89,7 @@ namespace GeneticAlgorithm
                     Left = mapSpace.WallLeft ? 1 : 0,
                     Right = mapSpace.WallRight ? 1 : 0,
                 },
-                
+
                 BorderBrush = Brushes.Black,
             };
 
@@ -90,20 +98,20 @@ namespace GeneticAlgorithm
 
             if (mapSpace.WallBottom)
                 height--;
-            if(mapSpace.WallUp)
+            if (mapSpace.WallUp)
                 height--;
             if (mapSpace.WallLeft)
                 width--;
             if (mapSpace.WallRight)
                 width--;
-            
+
             var rectangle = new Rectangle()
             {
                 Width = width,
                 Height = height,
                 Fill = color,
                 StrokeThickness = 1,
-                
+
                 Stroke = new SolidColorBrush(Colors.LightGray),
             };
 
@@ -111,5 +119,6 @@ namespace GeneticAlgorithm
 
             return border;
         }
+
     }
 }

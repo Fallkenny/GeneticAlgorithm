@@ -54,8 +54,9 @@ namespace GeneticAlgorithm
                     this.txtIndividuals.IsEnabled = false;
                     _algorithm = new GenAlgorithm(individuals);
 
-                    _algorithm.Initialize();
-                    this.MapViewer.DrawMap(_algorithm.Maze.Map, _algorithm.Maze.MapWidth, _algorithm.Maze.MapHeight, _algorithm.CurrentState.Id);
+                    _algorithm.Initialize(new ProblemTemplate());
+                    this.MapViewer.DrawMap(_algorithm.Maze.Map, _algorithm.Maze.MapWidth, _algorithm.Maze.MapHeight, _algorithm.CurrentState.Id, 
+                        _algorithm.CurrentBestIndividual?.StepById?.Keys?.Concat(new int[] { _algorithm.StartState.Id }).ToList());
                 }
             }
             _algorithm.Elitism = this.chkElitism.IsChecked ?? false;
@@ -68,27 +69,14 @@ namespace GeneticAlgorithm
                                              $"Genes: {_algorithm.CurrentBestIndividual.Genes}\n" +
                                              $"Fitness: {_algorithm.CurrentBestIndividual.Fitness}";
 
-            this.lblCurrentIndividual.Content = _algorithm.CurrentIndividual is null ? string.Empty : 
+            this.lblCurrentIndividual.Content = _algorithm.CurrentIndividual is null ? string.Empty :
                                                 $"Individuo Atual:\n{ _algorithm.CurrentIndividual.ToDirectionString()}\n" +
                                                 $"{_algorithm.CurrentIndividual.Genes}\n";
-            //this._episodeLabel.Content = $"Episódio: {_algorithm.Episodes.ToString() }";
-            //this._movesLabel.Content = $"Movimentos: {_algorithm.Moves.ToString() }";
-            //var path = _algorithm.BestPath;
-            //
-            //this._bestPathLabel.Content = string.Empty;
-            //for (int i = 0; i < path.Length; i++)
-            //{
-            //    if (i == 15)
-            //        this._bestPathLabel.Content += "\n";
-            //    this._bestPathLabel.Content += $"{path[i]}";
-            //}
-            //if (_algorithm.ReachedGlobalMaximum)
-            //    this._bestPathLabel.Foreground = Brushes.Green;
-            //else
-            //    this._bestPathLabel.Foreground = Brushes.Black;
+
 
             _algorithm.RunIteration();
-            this.MapViewer.DrawMap(_algorithm.Maze.Map, _algorithm.Maze.MapWidth, _algorithm.Maze.MapHeight, _algorithm.CurrentState.Id);
+            this.MapViewer.DrawMap(_algorithm.Maze.Map, _algorithm.Maze.MapWidth, _algorithm.Maze.MapHeight, _algorithm.CurrentState.Id, 
+                _algorithm.CurrentBestIndividual?.StepById?.Keys?.Concat(new int[] { _algorithm.StartState.Id }).ToList());
         }
 
         private void txtCrossoverRate_PreviewTextInput(object sender, TextCompositionEventArgs e)

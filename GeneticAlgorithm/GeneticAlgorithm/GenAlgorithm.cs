@@ -9,8 +9,8 @@ namespace GeneticAlgorithm
     {
         private Random _random = new Random();
 
-        public static readonly double DEFAULT_CROSSOVER_RATE = 0.7d;
-        public static readonly double DEFAULT_MUTATION_RATE = 0.3d;
+        public static readonly double DEFAULT_CROSSOVER_RATE = 0.75d;
+        public static readonly double DEFAULT_MUTATION_RATE = 0.45d;
 
         public float CrossoverRate { get; set; }
         public float MutationRate { get; set; }
@@ -31,7 +31,7 @@ namespace GeneticAlgorithm
         private int _individualSize = 28;
         private int _populationSize = 100;
         private eMovement? _previousMovement;
-        private Dictionary<int, List<int>> StepById { get; set; } = new Dictionary<int, List<int>>();
+        private int _generationsWithoutEvolution = 0;
 
         public int GenerationCount { get; set; }
         public bool Elitism { get; set; }
@@ -46,69 +46,100 @@ namespace GeneticAlgorithm
         {
             if (this.AlgorithmState == eAlgorithmState.Start)
             {
-                Initialize();
-                this.CurrentPopulation = new Population(_populationSize);
-                CreateRandomPopulation();
-                this.AlgorithmState = eAlgorithmState.Generating;
-                GenerationCount = 0;
+                Start();
                 return;
             }
 
             if (this.AlgorithmState == eAlgorithmState.Generating)
             {
-                this.CurrentPopulation.Order();
-                this.CurrentBestIndividual = CurrentPopulation.Individuals.First();
-                this.CurrentPopulation = NewGeneration(this.CurrentPopulation, this.Elitism);
-                this.CurrentPopulation.Order();
-                GenerationCount++;
-                _currentIndividualIndex = 0;
-                this.CurrentState = StartState;
-                this.AlgorithmState = eAlgorithmState.CalculatingFitness;
+                GeneratePopulation();
                 return;
             }
 
             if (this.AlgorithmState == eAlgorithmState.CalculatingFitness)
             {
-                if (_currentEvaluationIndex == _individualSize)
-                {
-                    CurrentState = StartState;
-                    _currentEvaluationIndex = 0;
-                    _currentIndividualIndex++;
-                    _previousMovement = null;
-                    StepById = new Dictionary<int, List<int>>();
-                    if (_currentIndividualIndex == CurrentPopulation.Size)
-                    {
-                        _currentIndividualIndex = 0;
-                        this.AlgorithmState = eAlgorithmState.Generating;
-                    }
-                    return;
-                }
-
-                var individual = this.CurrentPopulation.Individuals.ElementAt(_currentIndividualIndex);
-                CurrentIndividual = individual;
-                var movementGene = individual.Genes.Substring(_currentEvaluationIndex, 2);
-                _currentEvaluationIndex += 2;
-                var movement = GetMovement(movementGene);
-                var isLastMovement = _currentEvaluationIndex == _individualSize;
-                MoveAndCalculateFitness(individual, movement, isLastMovement);
-
-                if (_currentIndividualIndex == CurrentPopulation.Size)
-                {
-                    _previousMovement = null;
-                    StepById = new Dictionary<int, List<int>>();
-                    _currentIndividualIndex = 0;
-                    this.AlgorithmState = eAlgorithmState.Generating;
-                }
-
-
-
+                CalculateIndividualsFitness();
                 return;
             }
 
             if (this.AlgorithmState == eAlgorithmState.ReachedGoal)
             {
+                this.CurrentPopulation.Order();
+                var newBest = CurrentPopulation.Individuals.First();
+                CurrentPopulation = new Population(1) { Individuals = new List<Individual> { new Individual(newBest.Genes) } };
+                CurrentBestIndividual = newBest;
+                CalculateIndividualsFitness();
                 return;
             }
+        }
+        private void Start()
+        {
+            this.CurrentPopulation = new Population(_populationSize);
+            CreateRandomPopulation();
+            this.AlgorithmState = eAlgorithmState.Generating;
+            GenerationCount = 0;
+        }
+
+
+        private void GeneratePopulation()
+        {
+            this.CurrentPopulation.Order();
+            var newBest = CurrentPopulation.Individuals.First();
+            if (!(CurrentBestIndividual is null))
+            {
+                var totalDistance = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y,
+                    this.Maze.StartPosition.X, this.Maze.StartPosition.Y);
+
+                var globalMaxReward = 3 * (int)totalDistance + Rewards.GOAL;
+                //var globalMaxReward =  Rewards.GOAL;
+
+                if (globalMaxReward == CurrentBestIndividual.Fitness)
+                {
+                    AlgorithmState = eAlgorithmState.ReachedGoal;
+                    return;
+                }
+            }
+
+            this.CurrentBestIndividual = newBest;
+            this.CurrentPopulation = NewGeneration(this.CurrentPopulation, this.Elitism);
+            this.CurrentPopulation.Order();
+            GenerationCount++;
+            _currentIndividualIndex = 0;
+            this.CurrentState = StartState;
+            this.AlgorithmState = eAlgorithmState.CalculatingFitness;
+        }
+        private void CalculateIndividualsFitness()
+        {
+            if (_currentEvaluationIndex == _individualSize)
+            {
+                CurrentState = StartState;
+                _currentEvaluationIndex = 0;
+                _currentIndividualIndex++;
+                _previousMovement = null;
+                if (_currentIndividualIndex == CurrentPopulation.Size)
+                {
+                    _currentIndividualIndex = 0;
+                    this.AlgorithmState = eAlgorithmState.Generating;
+                }
+                return;
+            }
+
+            var individual = this.CurrentPopulation.Individuals.ElementAt(_currentIndividualIndex);
+            CurrentIndividual = individual;
+            var movementGene = individual.Genes.Substring(_currentEvaluationIndex, 2);
+            _currentEvaluationIndex += 2;
+            var movement = GetMovement(movementGene);
+            var isLastMovement = _currentEvaluationIndex == _individualSize;
+            MoveAndCalculateFitness(individual, movement, isLastMovement);
+
+            if (_currentIndividualIndex == CurrentPopulation.Size)
+            {
+                _previousMovement = null;
+                _currentIndividualIndex = 0;
+                this.AlgorithmState = eAlgorithmState.Generating;
+            }
+
+            return;
         }
 
         private void CreateRandomPopulation()
@@ -127,71 +158,53 @@ namespace GeneticAlgorithm
             return new Individual(genesString) { Fitness = int.MinValue };
         }
 
-        public double CalculateEuclidianDistance(int x1, int y1, int x2, int y2)
+        private double CalculateEuclidianDistance(int x1, int y1, int x2, int y2)
             => Math.Sqrt(((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)));
 
         private void MoveAndCalculateFitness(Individual individual, eMovement movement, bool isLastMovement)
         {
-            individual.Fitness += this.PunishMovement(movement, out bool validMovement, out int nextX, out int nextY);
+            individual.Fitness += this.PunishMovement(movement, out bool validMovement, out int nextX, out int nextY, isLastMovement);
             if (validMovement)
-            {
-
-                if (!isLastMovement)
-                {
-                    var previousDistanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, CurrentState.X, CurrentState.Y); ;
-                    var currentDistanceFromGoal = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
-
-                    if (previousDistanceFromGoal < currentDistanceFromGoal)
-                        individual.Fitness -= 1;
-                    //else
-                    //individual.Fitness -= 1;
-
-                }
-
-
-                CurrentState = Maze.Map[nextX, nextY];
-                individual.Fitness += CurrentState.Reward;
-                _previousMovement = movement;
-
-
-                if (!StepById.ContainsKey(CurrentState.Id))
-                    StepById.Add(CurrentState.Id, new List<int>() { _currentEvaluationIndex / 2 });
-                else
-                    StepById[CurrentState.Id].Add(_currentEvaluationIndex / 2);
-
-                if (isLastMovement)
-                {
-
-                    //
-                    //punir também pela diferença de passos 
-                    //se pisou na mesma casa no passo 2 e no passo 7, então punir com 7-2;
-                    //
-
-
-                    var repeatedSpaces = StepById.Values.Where(step => step.Count > 1);
-                    foreach (var repeatedSpace in repeatedSpaces)                    
-                        individual.Fitness -= (repeatedSpace.Last() - repeatedSpace.First())/2;                    
-
-                    var distanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, nextX, nextY);
-                    individual.Fitness -= 5 * (int)distanceFromGoal;
-                    var distanceFromStart = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
-                    individual.Fitness += 3 * (int)distanceFromStart;
-                }
-
-
-            }
+                PerformMovement(individual, movement, isLastMovement, nextX, nextY);
             else
             {
                 CurrentState = StartState;
                 _previousMovement = null;
-                StepById = new Dictionary<int, List<int>>();
                 _currentEvaluationIndex = 0;
                 _currentIndividualIndex++;
             }
-
         }
 
-        public int PunishMovement(eMovement movement, out bool validMovement, out int nextX, out int nextY)
+        private void PerformMovement(Individual individual, eMovement movement, bool isLastMovement, int nextX, int nextY)
+        {
+            if (!isLastMovement)
+            {
+                //var previousDistanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, CurrentState.X, CurrentState.Y); ;
+                //var currentDistanceFromGoal = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
+
+                //if (previousDistanceFromGoal < currentDistanceFromGoal)
+                //    individual.Fitness -= 1;
+
+            }
+
+            CurrentState = Maze.Map[nextX, nextY];
+            individual.Fitness += CurrentState.Reward;
+            _previousMovement = movement;
+
+            individual.AddStep(CurrentState.Id, _currentEvaluationIndex / 2);
+
+            if (isLastMovement)
+            {
+                individual.PunishRepeatedSteps();
+
+                var distanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, nextX, nextY);
+                individual.Fitness -= (int)(4.5 * distanceFromGoal);
+                var distanceFromStart = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
+                individual.Fitness += 3 * (int)distanceFromStart;
+            }
+        }
+
+        private int PunishMovement(eMovement movement, out bool validMovement, out int nextX, out int nextY, bool isLastMovement)
         {
             validMovement = true;
             nextX = CurrentState.X;
@@ -236,7 +249,8 @@ namespace GeneticAlgorithm
 
             if (nextX >= Maze.MapWidth || nextX < 0 || nextY < 0 || nextY >= Maze.MapHeight)
             {
-                punish = Rewards.VOID;
+                if (!isLastMovement)
+                    punish = Rewards.VOID;
                 validMovement = false;
             }
 
@@ -256,48 +270,9 @@ namespace GeneticAlgorithm
             }
         }
 
-        private IEnumerable<MapWall> GetWalls()
+        public void Initialize(IProblemTemplate problemTemplate)
         {
-            return new MapWall[]
-            {
-                new MapWall(1, 2, 0, 0),
-                new MapWall(4, 5, 0, 0),
-                new MapWall(2, 3, 1, 1),
-                new MapWall(5, 6, 1, 1),
-                new MapWall(3, 4, 2, 2),
-                new MapWall(6, 7, 2, 2),
-                new MapWall(0, 1, 3, 3),
-                new MapWall(1, 2, 3, 3),
-                new MapWall(2, 3, 3, 3),
-                new MapWall(1, 2, 4, 4),
-                new MapWall(2, 3, 4, 4),
-                new MapWall(5, 6, 4, 4),
-                new MapWall(6, 7, 4, 4),
-                new MapWall(0, 1, 6, 6),
-                new MapWall(2, 3, 6, 6),
-                new MapWall(4, 5, 6, 6),
-                new MapWall(5, 6, 6, 6),
-                new MapWall(6, 7, 7, 7),
-
-                new MapWall(1, 1, 0, 1),
-                new MapWall(1, 1, 2, 3),
-                new MapWall(2, 2, 1, 2),
-                new MapWall(2, 2, 5, 6),
-                new MapWall(3, 3, 4, 5),
-                new MapWall(4, 4, 1, 2),
-                new MapWall(4, 4, 3, 4),
-                new MapWall(4, 4, 6, 7),
-                new MapWall(5, 5, 4, 5),
-                new MapWall(6, 6, 5, 6),
-                new MapWall(7, 7, 2, 3),
-            };
-
-        }
-
-        public void Initialize()
-        {
-            this.Maze = new MazeProblem(8, 8, GetWalls(), 0, 7, 7, 0);
-            //this.Map = Maze.Map;
+            this.Maze = new MazeProblem(problemTemplate);
             this.StartState = Maze.StartPosition;
             this.CurrentState = Maze.StartPosition;
         }
@@ -330,7 +305,7 @@ namespace GeneticAlgorithm
             Random r = new Random();
 
             var cutPoint1 = r.Next((parents.Item1.Genes.Length / 2) - 1) + 1;
-            var cutPoint2 = r.Next((parents.Item1.Genes.Length / 2)) + parents.Item1.Genes.Length / 2;
+            var cutPoint2 = r.Next((parents.Item1.Genes.Length / 2) - 1) + parents.Item1.Genes.Length / 2;
 
             var parentGenes1 = parents.Item1.Genes;
             var parentGenes2 = parents.Item2.Genes;

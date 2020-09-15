@@ -7,14 +7,17 @@ namespace GeneticAlgorithm
 {
     class MazeProblem
     {
-        public MazeProblem(int mapWidth, int mapHeight, IEnumerable<MapWall> walls, 
-            int startX, int startY, int endX, int endY)
+        public MazeProblem(IProblemTemplate problemTemplate)
         {
-            this.MapWidth = mapWidth;
-            this.MapHeight = mapHeight;
-            this.Map = new MapSpace[mapWidth, mapHeight];
 
-            this.PopulateMapWalls(walls, startX, startY, endX,endY);
+            this.MapWidth = problemTemplate.Width;
+            this.MapHeight = problemTemplate.Height;
+
+            this.Map = new MapSpace[problemTemplate.Width, problemTemplate.Height];
+
+            this.PopulateMapWalls(problemTemplate.GetWalls(),
+                problemTemplate.StartX, problemTemplate.StartY,
+                problemTemplate.EndX, problemTemplate.EndY);
         }
 
         public int MapHeight { get; set; }
@@ -26,14 +29,14 @@ namespace GeneticAlgorithm
         public MapSpace EndPosition { get; set; }
 
         public MapSpace[,] Map { get; set; }
-               
+
         public void PopulateMapWalls(IEnumerable<MapWall> walls, int startX, int startY, int endX, int endY)
         {
             int index = 1;
             for (int j = 0; j < MapHeight; j++)
                 for (int i = 0; i < MapWidth; i++)
                     Map[i, j] = new MapSpace(Rewards.NORMALSPACE, index++, i, j);
-                       
+
             Map[7, 0].Reward = Rewards.GOAL;
             this.StartPosition = Map[0, 7];
             this.EndPosition = Map[7, 0];
@@ -48,15 +51,15 @@ namespace GeneticAlgorithm
 
                     var coordinateWalls = walls.Where(wall => wall.XFrom == i || wall.XTo == i || wall.YFrom == j || wall.YTo == j);
 
-                    foreach (var wall in verticalWalls.Where(w=>w.YFrom == j))
+                    foreach (var wall in verticalWalls.Where(w => w.YFrom == j))
                     {
-                        if(mapSpace.X == wall.XFrom)
+                        if (mapSpace.X == wall.XFrom)
                             mapSpace.WallRight = true;
-                        if(mapSpace.X == wall.XTo)                        
+                        if (mapSpace.X == wall.XTo)
                             mapSpace.WallLeft = true;
                     }
 
-                    foreach (var wall in horizontalWalls.Where(w=>w.XFrom == i))
+                    foreach (var wall in horizontalWalls.Where(w => w.XFrom == i))
                     {
                         if (mapSpace.Y == wall.YFrom)
                             mapSpace.WallBottom = true;

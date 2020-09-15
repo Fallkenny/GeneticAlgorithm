@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace GeneticAlgorithm
@@ -32,6 +33,8 @@ namespace GeneticAlgorithm
 
         public int Fitness { get; set; } = 0;
 
+        public Dictionary<int, List<int>> StepById { get; set; } = new Dictionary<int, List<int>>();
+
         public string Genes { get; set; }
 
         internal object ToDirectionString()
@@ -60,6 +63,21 @@ namespace GeneticAlgorithm
                 startIndex += 2;
             }
             return stringDirections;
+        }
+
+        public void PunishRepeatedSteps()
+        {
+            var repeatedSpaces = this.StepById.Values.Where(step => step.Count > 1);
+            foreach (var repeatedSpace in repeatedSpaces)
+                this.Fitness -= 2*(repeatedSpace.Last() - repeatedSpace.First());
+        }
+
+        internal void AddStep(int spaceID, int stepNumber)
+        {
+            if (!this.StepById.ContainsKey(spaceID))
+                this.StepById.Add(spaceID, new List<int>() { stepNumber });
+            else
+                this.StepById[spaceID].Add(stepNumber);
         }
     }
 }
