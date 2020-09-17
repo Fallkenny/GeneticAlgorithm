@@ -21,7 +21,6 @@ namespace GeneticAlgorithm
 
         public Individual CurrentBestIndividual { get; set; }
 
-        public MapSpace StartState { get; private set; }
         public MapSpace CurrentState { get; set; }
 
         public Population CurrentPopulation { get; set; }
@@ -64,34 +63,30 @@ namespace GeneticAlgorithm
 
             if (this.AlgorithmState == eAlgorithmState.ReachedGoal)
             {
-                this.CurrentPopulation.Order();
-                var newBest = CurrentPopulation.Individuals.First();
-                CurrentPopulation = new Population(1) { Individuals = new List<Individual> { new Individual(newBest.Genes) } };
-                CurrentBestIndividual = newBest;
+                CurrentPopulation = new Population(1) { Individuals = new List<Individual> { new Individual(CurrentBestIndividual.Genes) } };
                 CalculateIndividualsFitness();
                 return;
             }
         }
+
         private void Start()
         {
-            this.CurrentPopulation = new Population(_populationSize);
-            CreateRandomPopulation();
+            this.CurrentPopulation = Population.Random(_populationSize, _individualSize);
             this.AlgorithmState = eAlgorithmState.Generating;
             GenerationCount = 0;
         }
-
 
         private void GeneratePopulation()
         {
             this.CurrentPopulation.Order();
             var newBest = CurrentPopulation.Individuals.First();
+
             if (!(CurrentBestIndividual is null))
             {
                 var totalDistance = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y,
                     this.Maze.StartPosition.X, this.Maze.StartPosition.Y);
 
                 var globalMaxReward = 3 * (int)totalDistance + Rewards.GOAL;
-                //var globalMaxReward =  Rewards.GOAL;
 
                 if (globalMaxReward == CurrentBestIndividual.Fitness)
                 {
@@ -105,14 +100,15 @@ namespace GeneticAlgorithm
             this.CurrentPopulation.Order();
             GenerationCount++;
             _currentIndividualIndex = 0;
-            this.CurrentState = StartState;
+            this.CurrentState = Maze.StartPosition;
             this.AlgorithmState = eAlgorithmState.CalculatingFitness;
         }
+
         private void CalculateIndividualsFitness()
         {
             if (_currentEvaluationIndex == _individualSize)
             {
-                CurrentState = StartState;
+                CurrentState = Maze.StartPosition;
                 _currentEvaluationIndex = 0;
                 _currentIndividualIndex++;
                 _previousMovement = null;
@@ -128,9 +124,9 @@ namespace GeneticAlgorithm
             CurrentIndividual = individual;
             var movementGene = individual.Genes.Substring(_currentEvaluationIndex, 2);
             _currentEvaluationIndex += 2;
-            var movement = GetMovement(movementGene);
+            var movement = movementGene.ToMovement();
             var isLastMovement = _currentEvaluationIndex == _individualSize;
-            MoveAndCalculateFitness(individual, movement, isLastMovement);
+            Move(individual, movement, isLastMovement);
 
             if (_currentIndividualIndex == CurrentPopulation.Size)
             {
@@ -141,34 +137,18 @@ namespace GeneticAlgorithm
 
             return;
         }
-
-        private void CreateRandomPopulation()
-        {
-            for (int i = 0; i < CurrentPopulation.Size; i++)
-                CurrentPopulation.Individuals.Add(RandomIndividual(_individualSize));
-        }
-
-        private Individual RandomIndividual(int individualSize)
-        {
-            var bits = "01";
-            var genesString = "";
-            while (individualSize-- > 0)
-                genesString += bits.OrderBy(guid => Guid.NewGuid()).First();
-
-            return new Individual(genesString) { Fitness = int.MinValue };
-        }
-
+               
         private double CalculateEuclidianDistance(int x1, int y1, int x2, int y2)
             => Math.Sqrt(((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)));
 
-        private void MoveAndCalculateFitness(Individual individual, eMovement movement, bool isLastMovement)
+        private void Move(Individual individual, eMovement movement, bool isLastMovement)
         {
             individual.Fitness += this.PunishMovement(movement, out bool validMovement, out int nextX, out int nextY, isLastMovement);
             if (validMovement)
                 PerformMovement(individual, movement, isLastMovement, nextX, nextY);
             else
             {
-                CurrentState = StartState;
+                CurrentState = Maze.StartPosition;
                 _previousMovement = null;
                 _currentEvaluationIndex = 0;
                 _currentIndividualIndex++;
@@ -177,16 +157,6 @@ namespace GeneticAlgorithm
 
         private void PerformMovement(Individual individual, eMovement movement, bool isLastMovement, int nextX, int nextY)
         {
-            if (!isLastMovement)
-            {
-                //var previousDistanceFromGoal = CalculateEuclidianDistance(this.Maze.EndPosition.X, this.Maze.EndPosition.Y, CurrentState.X, CurrentState.Y); ;
-                //var currentDistanceFromGoal = CalculateEuclidianDistance(this.Maze.StartPosition.X, this.Maze.StartPosition.Y, nextX, nextY);
-
-                //if (previousDistanceFromGoal < currentDistanceFromGoal)
-                //    individual.Fitness -= 1;
-
-            }
-
             CurrentState = Maze.Map[nextX, nextY];
             individual.Fitness += CurrentState.Reward;
             _previousMovement = movement;
@@ -257,23 +227,9 @@ namespace GeneticAlgorithm
             return punish;
         }
 
-        private eMovement GetMovement(string movementGene)
-        {
-            switch (movementGene)
-            {
-                case "00": return eMovement.Right;
-                case "01": return eMovement.Up;
-                case "10": return eMovement.Left;
-                case "11":
-                default:
-                    return eMovement.Down;
-            }
-        }
-
         public void Initialize(IProblemTemplate problemTemplate)
         {
             this.Maze = new MazeProblem(problemTemplate);
-            this.StartState = Maze.StartPosition;
             this.CurrentState = Maze.StartPosition;
         }
 
@@ -304,8 +260,8 @@ namespace GeneticAlgorithm
         {
             Random r = new Random();
 
-            var cutPoint1 = r.Next((parents.Item1.Genes.Length / 2) - 1) + 1;
-            var cutPoint2 = r.Next((parents.Item1.Genes.Length / 2) - 1) + parents.Item1.Genes.Length / 2;
+            var cutPoint1 = r.Next((parents.Item1.Genes.Length / 2));
+            var cutPoint2 = r.Next((parents.Item1.Genes.Length / 2)) + parents.Item1.Genes.Length / 2;
 
             var parentGenes1 = parents.Item1.Genes;
             var parentGenes2 = parents.Item2.Genes;

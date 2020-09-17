@@ -79,5 +79,15 @@ namespace GeneticAlgorithm
             else
                 this.StepById[spaceID].Add(stepNumber);
         }
+
+        internal static Individual Random(int individualSize)
+        {
+            var bits = "01";
+            var genesString = "";
+            while (individualSize-- > 0)
+                genesString += bits.OrderBy(guid => Guid.NewGuid()).First();
+
+            return new Individual(genesString) { Fitness = int.MinValue };
+        }
     }
 }

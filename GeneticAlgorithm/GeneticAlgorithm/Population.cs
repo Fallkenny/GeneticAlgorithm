@@ -32,5 +32,13 @@ namespace GeneticAlgorithm
             if (Individuals.Count < Size)
                 Individuals.Add(individual);
         }
+
+        internal static Population Random(int populationSize, int individualSize)
+        {
+            var population = new Population(populationSize);
+            for (int i = 0; i < population.Size; i++)
+                population.Individuals.Add(Individual.Random(individualSize));
+            return population;
+        }
     }
 }

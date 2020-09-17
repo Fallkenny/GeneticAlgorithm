@@ -14,6 +14,19 @@ namespace GeneticAlgorithm
 
     public static class MovementExtension
     {
+        public static eMovement ToMovement(this string movementGene)
+        {
+            switch (movementGene)
+            {
+                case "00": return eMovement.Right;
+                case "01": return eMovement.Up;
+                case "10": return eMovement.Left;
+                case "11":
+                default:
+                    return eMovement.Down;
+            }
+        }
+
         public static string Arrow(this eMovement eMovement)
         {
             //↑↓→←

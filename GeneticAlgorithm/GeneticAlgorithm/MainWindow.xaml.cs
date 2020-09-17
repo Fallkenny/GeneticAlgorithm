@@ -1,18 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace GeneticAlgorithm
@@ -41,8 +32,7 @@ namespace GeneticAlgorithm
 
         private void timer_Tick(object sender, EventArgs e)
         {
-            _timer.Interval = TimeSpan.FromSeconds(0.05);//new TimeSpan((int.Parse((_comboTime.SelectedItem as ComboBoxItem).Tag as string)));
-            _timer.Interval = new TimeSpan(1);//new TimeSpan((int.Parse((_comboTime.SelectedItem as ComboBoxItem).Tag as string)));
+            _timer.Interval = new TimeSpan(1);
 
             if (!_canRun)
                 return;
@@ -56,7 +46,7 @@ namespace GeneticAlgorithm
 
                     _algorithm.Initialize(new ProblemTemplate());
                     this.MapViewer.DrawMap(_algorithm.Maze.Map, _algorithm.Maze.MapWidth, _algorithm.Maze.MapHeight, _algorithm.CurrentState.Id, 
-                        _algorithm.CurrentBestIndividual?.StepById?.Keys?.Concat(new int[] { _algorithm.StartState.Id }).ToList());
+                        _algorithm.CurrentBestIndividual?.StepById?.Keys?.Concat(new int[] { _algorithm.Maze.StartPosition.Id }).ToList());
                 }
             }
             _algorithm.Elitism = this.chkElitism.IsChecked ?? false;
@@ -76,7 +66,7 @@ namespace GeneticAlgorithm
 
             _algorithm.RunIteration();
             this.MapViewer.DrawMap(_algorithm.Maze.Map, _algorithm.Maze.MapWidth, _algorithm.Maze.MapHeight, _algorithm.CurrentState.Id, 
-                _algorithm.CurrentBestIndividual?.StepById?.Keys?.Concat(new int[] { _algorithm.StartState.Id }).ToList());
+                _algorithm.CurrentBestIndividual?.StepById?.Keys?.Concat(new int[] { _algorithm.Maze.StartPosition.Id }).ToList());
         }
 
         private void txtCrossoverRate_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -113,7 +103,5 @@ namespace GeneticAlgorithm
             var textBox = sender as TextBox;
             e.Handled = Regex.IsMatch(e.Text, "[^0-9-]+");
         }
-
-
     }
 }
