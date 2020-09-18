@@ -12,11 +12,6 @@ namespace GeneticAlgorithm
 
         }
 
-        public Individual(string genes)
-        {
-            this.Genes = genes;
-        }
-
         public Individual(string genes, float mutationRate)
         {
             var random = new Random();
@@ -33,9 +28,14 @@ namespace GeneticAlgorithm
 
         public int Fitness { get; set; } = 0;
 
+        public string Genes { get; set; }
+
         public Dictionary<int, List<int>> StepById { get; set; } = new Dictionary<int, List<int>>();
 
-        public string Genes { get; set; }
+        public Individual(string genes)
+        {
+            this.Genes = genes;
+        }
 
         internal object ToDirectionString()
         {

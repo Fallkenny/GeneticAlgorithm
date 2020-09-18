@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GeneticAlgorithm"
         mc:Ignorable="d"
-        Title="MainWindow" Height="527" Width="577">
+        Title="GeneticAlgorithm" Height="527" Width="577">
     <Grid>
         <local:MapViewer x:Name="MapViewer" HorizontalAlignment="Left" Height="250" Margin="10,10,0,0" VerticalAlignment="Top" Width="330" BorderThickness="5,5,5,5" BorderBrush="Black"/>
         <Label x:Name="lblGeneration" Content="Geração: " HorizontalAlignment="Left" Margin="345,10,0,0" VerticalAlignment="Top"/>

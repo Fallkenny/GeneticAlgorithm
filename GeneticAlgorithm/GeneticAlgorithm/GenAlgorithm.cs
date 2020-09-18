@@ -245,11 +245,11 @@ namespace GeneticAlgorithm
                 (Individual, Individual) parents = TournamentSelection(population);
 
                 if (_random.NextDouble() <= CrossoverRate)
-                    newPopulation.Individuals.AddRange(Crossover(parents));
+                    newPopulation.AddRange(Crossover(parents));
                 else
                 {
-                    newPopulation.Individuals.Add(new Individual(parents.Item1.Genes, MutationRate));
-                    newPopulation.Individuals.Add(new Individual(parents.Item2.Genes, MutationRate));
+                    newPopulation.Add(new Individual(parents.Item1.Genes, MutationRate));
+                    newPopulation.Add(new Individual(parents.Item2.Genes, MutationRate));
                 }
             }
 
