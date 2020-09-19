@@ -21,6 +21,13 @@ namespace GeneticAlgorithm
                 var bit = genes[swapPosition] == '0' ? '1' : '0';
                 var array = genes.ToCharArray();
                 array[swapPosition] = bit;
+
+                if (random.NextDouble() <= mutationRate)
+                {
+                    swapPosition = random.Next(0, genes.Length);
+                    bit = genes[swapPosition] == '0' ? '1' : '0';
+                    array[swapPosition] = bit;
+                }
                 genes = new string(array);
             }
             this.Genes = genes;
@@ -69,7 +76,7 @@ namespace GeneticAlgorithm
         {
             var repeatedSpaces = this.StepById.Values.Where(step => step.Count > 1);
             foreach (var repeatedSpace in repeatedSpaces)
-                this.Fitness -= 2*(repeatedSpace.Last() - repeatedSpace.First());
+                this.Fitness -= 2 * (repeatedSpace.Last() - repeatedSpace.First());
         }
 
         internal void AddStep(int spaceID, int stepNumber)

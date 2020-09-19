@@ -9,8 +9,8 @@ namespace GeneticAlgorithm
     {
         private Random _random = new Random();
 
-        public static readonly double DEFAULT_CROSSOVER_RATE = 0.75d;
-        public static readonly double DEFAULT_MUTATION_RATE = 0.45d;
+        public static readonly double DEFAULT_CROSSOVER_RATE = 0.7d;
+        public static readonly double DEFAULT_MUTATION_RATE = 0.3d;
 
         public float CrossoverRate { get; set; }
         public float MutationRate { get; set; }
